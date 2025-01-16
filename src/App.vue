@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import axios from 'axios';
 
-const e1 = ref([true, false, false, false, false, false, false, false, false, false]);
 const interval = 3000;
-
 let elevators = ref([
   {
     id: 0, 
@@ -72,70 +69,41 @@ let elevators = ref([
   }
 ]);
 
-const mainCall = setInterval(() => {
+setInterval(() => {
   let randomStart = Math.floor(Math.random() * 10);
   let randomEnd = Math.floor(Math.random() * 10);
   let availableElevators = elevators.value.filter(e => e.isMoving == false);
   let availableElevatorsIds = availableElevators.map(e => e.id);
   let randomElevator = availableElevatorsIds[Math.floor(Math.random() * availableElevatorsIds.length)];
 
-  if (availableElevatorsIds.length > 0) {
+  if (availableElevatorsIds.length > 0 && randomStart !== randomEnd) {
     elevators.value[randomElevator].floors[randomStart].isWaiting = true;
     elevator(randomElevator, randomStart, randomEnd);
-  } else {
-    clearInterval(mainCall);
   }
-
 }, interval);
 
 const elevator = (elevator: number, start: number, end: number) => {
-  console.log(elevator, start, end);
-
   elevators.value[elevator].isMoving = true;
-
   const currentFloor = elevators.value[elevator].floors.findIndex(f => f.isStandBy);
+  const unoccupiedFloor = elevators.value[elevator].floors.findIndex(f => f.isUnoccupied);
+  if (elevators.value[elevator].floors[unoccupiedFloor]) {
+    elevators.value[elevator].floors[unoccupiedFloor].isUnoccupied = false;
+  }
+
   if (currentFloor != start) {
     moveToStart(elevator, currentFloor, start)
       .then(() => {
           if (start < end) {
-            up(elevator, start, end, true).then(currentFloor => {
-              setTimeout(() => {
-                elevators.value[elevator].floors[currentFloor].isStandBy = true;
-                elevators.value[elevator].floors[currentFloor].isActive = false;
-                elevators.value[elevator].floors[currentFloor].isOccupied = false;
-                elevators.value[elevator].floors[currentFloor].isUnoccupied = true;
-              }, interval);
-            });
+            up(elevator, start, end, true).then(currentFloor => setupUnoccupiedFloor(elevator, currentFloor));
           } else {
-            down(elevator, start, end, true).then(currentFloor => {
-              setTimeout(() => {
-                elevators.value[elevator].floors[currentFloor].isStandBy = true;
-                elevators.value[elevator].floors[currentFloor].isActive = false;
-                elevators.value[elevator].floors[currentFloor].isOccupied = false;
-                elevators.value[elevator].floors[currentFloor].isUnoccupied = true;
-              }, interval);
-            });
+            down(elevator, start, end, true).then(currentFloor => setupUnoccupiedFloor(elevator, currentFloor));
           }
       });
   } else {
     if (start < end) {
-      up(elevator, start, end, true).then(currentFloor => {
-        setTimeout(() => {
-          elevators.value[elevator].floors[currentFloor].isStandBy = true;
-          elevators.value[elevator].floors[currentFloor].isActive = false;
-          elevators.value[elevator].floors[currentFloor].isOccupied = false;
-          elevators.value[elevator].floors[currentFloor].isUnoccupied = true;
-        }, interval);
-      });
+      return up(elevator, start, end, true).then(currentFloor => setupUnoccupiedFloor(elevator, currentFloor));
     } else {
-      down(elevator, start, end, true).then(currentFloor => {
-        setTimeout(() => {
-          elevators.value[elevator].floors[currentFloor].isStandBy = true;
-          elevators.value[elevator].floors[currentFloor].isActive = false;
-          elevators.value[elevator].floors[currentFloor].isOccupied = false;
-          elevators.value[elevator].floors[currentFloor].isUnoccupied = true;
-        }, interval);
-      });
+      return down(elevator, start, end, true).then(currentFloor => setupUnoccupiedFloor(elevator, currentFloor));
     }
   }
 }
@@ -154,19 +122,14 @@ const up = (elevator: number, start: number, end: number, isOccupied: boolean) =
   return new Promise((resolve) => {
     let currentFloor = start;
     const i = setInterval(() => {
-      elevators.value[elevator].floors[currentFloor].isStandBy = false;
-      elevators.value[elevator].floors[currentFloor].isActive = true;
-      if (isOccupied) {
-        elevators.value[elevator].floors[currentFloor].isWaiting = false;
-        elevators.value[elevator].floors[currentFloor].isOccupied = true;
-      }
+      setupOccupiedFloor(elevator, currentFloor, isOccupied);
 
       if (elevators.value[elevator].floors[currentFloor - 1]) {
         elevators.value[elevator].floors[currentFloor - 1].isActive = false;
         elevators.value[elevator].floors[currentFloor - 1].isOccupied = false;
       }
       
-      if (currentFloor === (end)) {
+      if (currentFloor === end) {
         clearInterval(i);
         resolve(currentFloor);
       }
@@ -181,19 +144,14 @@ const down = (elevator: number, start: number, end: number, isOccupied: boolean)
   return new Promise((resolve) => {
     let currentFloor = start;
     const i = setInterval(() => {
-      elevators.value[elevator].floors[currentFloor].isStandBy = false;
-      elevators.value[elevator].floors[currentFloor].isActive = true;
-      if (isOccupied) {
-        elevators.value[elevator].floors[currentFloor].isWaiting = false;
-        elevators.value[elevator].floors[currentFloor].isOccupied = true;
-      }
+      setupOccupiedFloor(elevator, currentFloor, isOccupied);
       
       if (elevators.value[elevator].floors[currentFloor + 1]) {
         elevators.value[elevator].floors[currentFloor + 1].isActive = false;
         elevators.value[elevator].floors[currentFloor + 1].isOccupied = false;
       }
       
-      if (currentFloor === (end)) {
+      if (currentFloor === end) {
         clearInterval(i);
         resolve(currentFloor);
       }
@@ -201,6 +159,25 @@ const down = (elevator: number, start: number, end: number, isOccupied: boolean)
       currentFloor--;
     }, interval);
   });
+}
+
+const setupUnoccupiedFloor = (elevator: number, currentFloor: number) => {
+  setTimeout(() => {
+    elevators.value[elevator].floors[currentFloor].isStandBy = true;
+    elevators.value[elevator].floors[currentFloor].isActive = false;
+    elevators.value[elevator].floors[currentFloor].isOccupied = false;
+    elevators.value[elevator].floors[currentFloor].isUnoccupied = true;
+    elevators.value[elevator].isMoving = false;
+  }, interval);
+}
+
+const setupOccupiedFloor = (elevator: number, currentFloor: number, isOccupied: boolean) => {
+  elevators.value[elevator].floors[currentFloor].isStandBy = false;
+  elevators.value[elevator].floors[currentFloor].isActive = true;
+  if (isOccupied) {
+    elevators.value[elevator].floors[currentFloor].isWaiting = false;
+    elevators.value[elevator].floors[currentFloor].isOccupied = true;
+  }
 }
 </script>
 
@@ -216,7 +193,10 @@ const down = (elevator: number, start: number, end: number, isOccupied: boolean)
   .building {
     display: flex;
     flex-direction: row;
-    gap: 20px 60px;
+    gap: 20px 80px;
+    justify-content: center;
+    padding: 50px;
+    position: relative;
   }
 
   .elevators {
@@ -227,7 +207,7 @@ const down = (elevator: number, start: number, end: number, isOccupied: boolean)
 
   .elevator {
     width: 50px;
-    height: 50px;
+    height: 60px;
     background-color: #d6d6d6;
     position: relative;
 
@@ -242,7 +222,6 @@ const down = (elevator: number, start: number, end: number, isOccupied: boolean)
       bottom: 16px;
       left: 0;
       margin: auto;
-      background-color: #bdbdbd;
     }
 
     &::after {
@@ -250,7 +229,6 @@ const down = (elevator: number, start: number, end: number, isOccupied: boolean)
       display: none;
       width: 15px;
       height: 13px;
-      background-color: #bdbdbd;
       position: absolute;
       right: 0;
       bottom: 2px;
@@ -267,7 +245,7 @@ const down = (elevator: number, start: number, end: number, isOccupied: boolean)
     &.unoccupied::before,
     &.unoccupied::after {
       display: block;
-      background-color: #000000;
+      background-color: #707070;
     }
     &.waiting::before {
       left: -75px;
@@ -286,10 +264,13 @@ const down = (elevator: number, start: number, end: number, isOccupied: boolean)
       right: -76px;
     }
     &.stand-by {
-      background-color: grey;
+      background-color: #a8a8a8;
     }
     &.active {
       background-color: #b8ffb8;
+    }
+    &.occupied {
+      background-color: #ffc8a4;
     }
   }
 </style>
