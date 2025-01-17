@@ -68,6 +68,7 @@ let elevators = ref([
     ] 
   }
 ]);
+let elevatorLogs: any[] = []; 
 
 setInterval(() => {
   let randomStart = Math.floor(Math.random() * 10);
@@ -83,6 +84,9 @@ setInterval(() => {
 }, interval);
 
 const elevator = (elevator: number, start: number, end: number) => {
+  manageLogs();
+  elevatorLogs.push({ class: `elevator-default`, message: `A passenger is waiting in ${start+1}F` });
+
   elevators.value[elevator].isMoving = true;
   const currentFloor = elevators.value[elevator].floors.findIndex(f => f.isStandBy);
   const unoccupiedFloor = elevators.value[elevator].floors.findIndex(f => f.isUnoccupied);
@@ -120,9 +124,11 @@ const moveToStart = (elevator: number, currentFloor: number, start: number) => {
 
 const up = (elevator: number, start: number, end: number, isOccupied: boolean) => {
   return new Promise((resolve) => {
+    let loopIndex = 0;
     let currentFloor = start;
+
     const i = setInterval(() => {
-      setupOccupiedFloor(elevator, currentFloor, isOccupied);
+      setupOccupiedFloor(elevator, currentFloor, isOccupied, loopIndex, end);
 
       if (elevators.value[elevator].floors[currentFloor - 1]) {
         elevators.value[elevator].floors[currentFloor - 1].isActive = false;
@@ -135,16 +141,18 @@ const up = (elevator: number, start: number, end: number, isOccupied: boolean) =
       }
 
       currentFloor++;
+      loopIndex++;
     }, interval);
   });
 }
 
 const down = (elevator: number, start: number, end: number, isOccupied: boolean) => {
-  
   return new Promise((resolve) => {
+    let loopIndex = 0;
     let currentFloor = start;
+    
     const i = setInterval(() => {
-      setupOccupiedFloor(elevator, currentFloor, isOccupied);
+      setupOccupiedFloor(elevator, currentFloor, isOccupied, loopIndex, end);
       
       if (elevators.value[elevator].floors[currentFloor + 1]) {
         elevators.value[elevator].floors[currentFloor + 1].isActive = false;
@@ -157,6 +165,7 @@ const down = (elevator: number, start: number, end: number, isOccupied: boolean)
       }
 
       currentFloor--;
+      loopIndex++;
     }, interval);
   });
 }
@@ -168,15 +177,31 @@ const setupUnoccupiedFloor = (elevator: number, currentFloor: number) => {
     elevators.value[elevator].floors[currentFloor].isOccupied = false;
     elevators.value[elevator].floors[currentFloor].isUnoccupied = true;
     elevators.value[elevator].isMoving = false;
+    manageLogs();
+    elevatorLogs.push({ class: `elevator-${elevator+1}`, message: `A passenger left the Elevator ${elevator+1} in ${currentFloor+1}F` });
   }, interval);
 }
 
-const setupOccupiedFloor = (elevator: number, currentFloor: number, isOccupied: boolean) => {
+const setupOccupiedFloor = (elevator: number, currentFloor: number, isOccupied: boolean, loopIndex: number, end: number) => {
   elevators.value[elevator].floors[currentFloor].isStandBy = false;
   elevators.value[elevator].floors[currentFloor].isActive = true;
   if (isOccupied) {
     elevators.value[elevator].floors[currentFloor].isWaiting = false;
     elevators.value[elevator].floors[currentFloor].isOccupied = true;
+    if (loopIndex == 0) {
+      manageLogs();
+      elevatorLogs.push({ class: `elevator-${elevator+1}`, message: `Elevator ${elevator+1} picked a passenger in ${currentFloor+1}F` });
+    }
+  }
+  if(!isOccupied && loopIndex == 0) {
+    manageLogs();
+    elevatorLogs.push({ class: `elevator-${elevator+1}`, message: `Elevator ${elevator+1} is picking a passenger in ${end+1}F` });
+  }
+}
+
+const manageLogs = () => {
+  if (elevatorLogs.length == 12) {
+    elevatorLogs.shift();
   }
 }
 </script>
@@ -185,6 +210,11 @@ const setupOccupiedFloor = (elevator: number, currentFloor: number, isOccupied: 
   <div class="building">
     <div class="elevators" v-for="elevator in elevators">
       <div class="elevator" v-for="floor in elevator.floors" :class="{ waiting: floor.isWaiting, occupied: floor.isOccupied, 'stand-by': floor.isStandBy, active: floor.isActive, unoccupied: floor.isUnoccupied }"></div>
+    </div>
+    <div class="elevator-logs">
+      <ul class="elevator-logs-list">
+        <li class="elevator-logs-list-item" v-for="eLog in elevatorLogs" :class="eLog.class">{{ eLog.message }}</li>
+      </ul>
     </div>
   </div>
 </template>
@@ -278,4 +308,42 @@ const setupOccupiedFloor = (elevator: number, currentFloor: number, isOccupied: 
       background-color: #ffc8a4;
     }
   }
+  .elevator-logs {
+      position: absolute;
+      top: 0;
+      right: 20px;
+      bottom: 0;
+      margin: auto;
+      height: 350px;
+      width: 250px;
+
+      .elevator-logs-list {
+        height: 100%;
+        overflow: auto;
+        display: flex;
+        gap: 3px;
+        flex-direction: column;
+        font-size: 12px;
+        padding: 0;
+      }
+      .elevator-logs-list-item {
+        padding: 3px 5px;
+        border-radius: 5px;
+        &.elevator-default {
+          background-color: #e4e4e4;
+        }
+        &.elevator-1 {
+          background-color: #ffa4e4;
+        }
+        &.elevator-2 {
+          background-color: #a4b2ff;
+        }
+        &.elevator-3 {
+          background-color: #a4deff;
+        }
+        &.elevator-4 {
+          background-color: #a4ffeb;
+        }
+      }
+    }
 </style>
