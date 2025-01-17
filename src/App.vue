@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-const interval = 10000;
+const interval = 5000;
 let elevators = ref([
   {
     id: 0, 
@@ -244,6 +244,18 @@ const manageLogs = () => {
     display: flex;
     flex-direction: column-reverse;
     gap: 10px;
+    &:nth-child(1) .occupied {
+      background-color: #ffa4e4;
+    }
+    &:nth-child(2) .occupied {
+      background-color: #a4b2ff;
+    }
+    &:nth-child(3) .occupied {
+      background-color: #a4deff;
+    }
+    &:nth-child(4) .occupied {
+      background-color: #a4ffeb;
+    }
   }
   .elevator-row {
     width: 30px;
@@ -307,9 +319,6 @@ const manageLogs = () => {
     }
     &.active {
       background-color: #b8ffb8;
-    }
-    &.occupied {
-      background-color: #ffc8a4;
     }
   }
   .elevator-logs {
