@@ -85,7 +85,7 @@ setInterval(() => {
 
 const elevator = (elevator: number, start: number, end: number) => {
   manageLogs();
-  elevatorLogs.push({ class: `elevator-default`, message: `A passenger is waiting in ${start+1}F` });
+  elevatorLogs.push({ class: `elevator-${elevator+1}`, message: `A passenger is waiting in ${start+1}F` });
 
   elevators.value[elevator].isMoving = true;
   const currentFloor = elevators.value[elevator].floors.findIndex(f => f.isStandBy);
@@ -136,6 +136,9 @@ const up = (elevator: number, start: number, end: number, isOccupied: boolean) =
       }
       
       if (currentFloor === end) {
+        if (isOccupied) {
+          elevatorLogs.push({ class: `elevator-${elevator+1}`, message: `Passenger reached her/him destination` });
+        }
         clearInterval(i);
         resolve(currentFloor);
       }
@@ -208,8 +211,10 @@ const manageLogs = () => {
 
 <template>
   <div class="building">
-    <div class="elevators" v-for="elevator in elevators">
-      <div class="elevator" v-for="floor in elevator.floors" :class="{ waiting: floor.isWaiting, occupied: floor.isOccupied, 'stand-by': floor.isStandBy, active: floor.isActive, unoccupied: floor.isUnoccupied }"></div>
+    <div class="elevator">
+        <div class="elevator-col" v-for="elevator in elevators">
+          <div class="elevator-row" v-for="floor in elevator.floors" :class="{ waiting: floor.isWaiting, occupied: floor.isOccupied, 'stand-by': floor.isStandBy, active: floor.isActive, unoccupied: floor.isUnoccupied }"></div>
+        </div>
     </div>
     <div class="elevator-logs">
       <ul class="elevator-logs-list">
@@ -217,53 +222,51 @@ const manageLogs = () => {
       </ul>
     </div>
   </div>
+  
 </template>
 
 <style scoped>
-  .building {
+.building {
+  color: #464646;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 5px;
+  .elevator {
     display: flex;
     flex-direction: row;
-    gap: 20px 80px;
     justify-content: center;
-    padding: 50px;
-    position: relative;
+    gap: 50px;
+    padding: 40px 20px 20px 20px;
   }
-
-  .elevators {
+  .elevator-col {
     display: flex;
     flex-direction: column-reverse;
-    gap: 20px;
+    gap: 10px;
   }
-
-  .elevator {
-    width: 50px;
-    height: 60px;
+  .elevator-row {
+    width: 30px;
+    height: 40px;
     background-color: #d6d6d6;
     position: relative;
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 24px;
-    color: #a0a0a0;
-    text-align: center;
-
     &::before {
       content: "";
       display: none;
-      width: 20px;
-      height: 20px;
-      border-radius: 20px;
+      width: 12px;
+      height: 12px;
+      border-radius: 12px;
       position: absolute;
       right: 0;
       bottom: 16px;
       left: 0;
       margin: auto;
+      background-color: #707070;
     }
-
     &::after {
       content: "";
       display: none;
-      width: 15px;
-      height: 13px;
+      width: 10px;
+      height: 12px;
       position: absolute;
       right: 0;
       bottom: 2px;
@@ -271,8 +274,8 @@ const manageLogs = () => {
       margin: auto;
       border-top-left-radius: 20px;
       border-top-right-radius: 20px;
+      background-color: #707070;
     }
-
     &.waiting::before,
     &.waiting::after,
     &.occupied::before,
@@ -283,20 +286,20 @@ const manageLogs = () => {
       background-color: #707070;
     }
     &.waiting::before {
-      left: -75px;
+      left: -50px;
     }
     &.waiting::after {
-      left: -76px;
+      left: -50px;
     }
     &.occupied::before,
     &.occupied::after {
       left: 0;
     }
     &.unoccupied::before {
-      right: -75px;
+      right: -50px;
     }
     &.unoccupied::after {
-      right: -76px;
+      right: -50px;
     }
     &.stand-by {
       background-color: #a8a8a8;
@@ -309,41 +312,91 @@ const manageLogs = () => {
     }
   }
   .elevator-logs {
-      position: absolute;
-      top: 0;
-      right: 20px;
-      bottom: 0;
-      margin: auto;
-      height: 350px;
-      width: 250px;
-
-      .elevator-logs-list {
-        height: 100%;
-        overflow: auto;
-        display: flex;
-        gap: 3px;
-        flex-direction: column;
-        font-size: 12px;
-        padding: 0;
-      }
-      .elevator-logs-list-item {
-        padding: 3px 5px;
-        border-radius: 5px;
-        &.elevator-default {
-          background-color: #e4e4e4;
-        }
-        &.elevator-1 {
-          background-color: #ffa4e4;
-        }
-        &.elevator-2 {
-          background-color: #a4b2ff;
-        }
-        &.elevator-3 {
-          background-color: #a4deff;
-        }
-        &.elevator-4 {
-          background-color: #a4ffeb;
-        }
-      }
+    text-align: center;
+    padding: 0 10px;
+  }
+  .elevator-logs-list {
+    height: 100%;
+    overflow: auto;
+    display: flex;
+    gap: 3px;
+    flex-direction: column;
+    font-size: 12px;
+    padding: 0;
+  }
+  .elevator-logs-list-item {
+    padding: 3px 5px;
+    border-radius: 5px;
+    &.elevator-default {
+      background-color: #e4e4e4;
     }
+    &.elevator-1 {
+      background-color: #ffa4e4;
+    }
+    &.elevator-2 {
+      background-color: #a4b2ff;
+    }
+    &.elevator-3 {
+      background-color: #a4deff;
+    }
+    &.elevator-4 {
+      background-color: #a4ffeb;
+    }
+  }
+}
+@media only screen and (min-width: 768px) {
+  .building {
+    gap: 30px !important;
+  }
+  .elevator {
+    padding-top: 50px !important;
+  }
+  .elevator-row {
+    width: 50px !important;
+    height: 60px !important;
+    &::before {
+      width: 20px !important;
+      height: 20px !important;
+      border-radius: 20px !important;
+      bottom: 19px !important;
+    }
+    &::after {
+      width: 13px !important;
+      height: 15px !important;
+    }
+    &.waiting::before {
+      left: -80px !important;
+    }
+    &.waiting::after {
+      left: -80px !important;
+    }
+    &.unoccupied::before {
+      right: -80px !important;
+    }
+    &.unoccupied::after {
+      right: -80px !important;
+    }
+  }
+  .elevator-logs {
+    padding: 0 100px !important;
+  } 
+}
+@media only screen and (min-width: 992px) {
+  .building {
+    flex-direction: row;
+    justify-content: normal;
+  }
+  .elevator {
+    width: 60%;
+    gap: 70px !important;
+  }
+  .elevator-logs {
+    padding: 40px 10px 0 10px !important;
+    width: 250px;
+  }
+  .elevator-row {
+    width: 50px !important;
+    height: 60px !important;
+  }
+}
 </style>
