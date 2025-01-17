@@ -164,6 +164,10 @@ const down = (elevator: number, start: number, end: number, isOccupied: boolean)
       }
       
       if (currentFloor === end) {
+        if (isOccupied) {
+          manageLogs();
+          elevatorLogs.push({ class: `elevator-${elevator+1}`, message: `Passenger reached his/her destination` });
+        }
         clearInterval(i);
         resolve(currentFloor);
       }
