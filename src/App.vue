@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-const interval = 3000;
+const interval = 10000;
 let elevators = ref([
   {
     id: 0, 
@@ -184,7 +184,7 @@ const setupOccupiedFloor = (elevator: number, currentFloor: number, isOccupied: 
 <template>
   <div class="building">
     <div class="elevators" v-for="elevator in elevators">
-      <div class="elevator" v-for="floor in elevator.floors" :class="{ waiting: floor.isWaiting, occupied: floor.isOccupied, 'stand-by': floor.isStandBy, active: floor.isActive, unoccupied: floor.isUnoccupied }"></div>
+      <div class="elevator" v-for="(floor, i) in elevator.floors" :class="{ waiting: floor.isWaiting, occupied: floor.isOccupied, 'stand-by': floor.isStandBy, active: floor.isActive, unoccupied: floor.isUnoccupied }">{{ i + 1 }}</div>
     </div>
   </div>
 </template>
@@ -210,6 +210,11 @@ const setupOccupiedFloor = (elevator: number, currentFloor: number, isOccupied: 
     height: 60px;
     background-color: #d6d6d6;
     position: relative;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 24px;
+    color: #a0a0a0;
+    text-align: center;
 
     &::before {
       content: "";
