@@ -137,7 +137,8 @@ const up = (elevator: number, start: number, end: number, isOccupied: boolean) =
       
       if (currentFloor === end) {
         if (isOccupied) {
-          elevatorLogs.push({ class: `elevator-${elevator+1}`, message: `Passenger reached her/him destination` });
+          manageLogs();
+          elevatorLogs.push({ class: `elevator-${elevator+1}`, message: `Passenger reached his/her destination` });
         }
         clearInterval(i);
         resolve(currentFloor);
@@ -203,7 +204,7 @@ const setupOccupiedFloor = (elevator: number, currentFloor: number, isOccupied: 
 }
 
 const manageLogs = () => {
-  if (elevatorLogs.length == 12) {
+  if (elevatorLogs.length == 20) {
     elevatorLogs.shift();
   }
 }
