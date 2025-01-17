@@ -184,7 +184,7 @@ const setupOccupiedFloor = (elevator: number, currentFloor: number, isOccupied: 
 <template>
   <div class="building">
     <div class="elevators" v-for="elevator in elevators">
-      <div class="elevator" v-for="(floor, i) in elevator.floors" :class="{ waiting: floor.isWaiting, occupied: floor.isOccupied, 'stand-by': floor.isStandBy, active: floor.isActive, unoccupied: floor.isUnoccupied }">{{ i + 1 }}</div>
+      <div class="elevator" v-for="floor in elevator.floors" :class="{ waiting: floor.isWaiting, occupied: floor.isOccupied, 'stand-by': floor.isStandBy, active: floor.isActive, unoccupied: floor.isUnoccupied }"></div>
     </div>
   </div>
 </template>
