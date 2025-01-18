@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-const interval = 5000;
+const interval = 10000;
 const elevators = ref([
   {
     id: 0, 
@@ -202,15 +202,15 @@ const setupOccupiedFloor = (elevator: number, currentFloor: number, isOccupied: 
   }
 }
 
-const manageLogs = () => {
-  if (elevatorLogs.value.length == 20) {
-    elevatorLogs.value.shift();
+const manageLogs = (id: number, event: string) => {
+  const elevatorLogsById = elevatorLogs.value.filter(e => e.id === id);
+  const index = elevatorLogs.value.findIndex(e => e.id === id && e.event === event);
+  if (elevatorLogsById.length == 5) {
+    elevatorLogs.value.splice(index, 1);
   }
 }
 
 const log = (event: string, elevator: number, floor: number) => {
-  manageLogs();
-
   let id = elevator+1;
   let isVisible = (id == activeElevatorLogs.value || activeElevatorLogs.value == 0) ? true : false;
   let message = "";
@@ -230,7 +230,8 @@ const log = (event: string, elevator: number, floor: number) => {
     message = `A passenger left the Elevator ${id} in ${floor+1}F`
   }
   
-  elevatorLogs.value.push({ id, class: `elevator-${id}`, message, isVisible });
+  manageLogs(id, event);
+  elevatorLogs.value.push({ id, event, class: `elevator-${id}`, message, isVisible });
 }
 
 const toggleElevatorLogs = (id: number) => {
