@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 
 const interval = 5000;
-let elevators = ref([
+const elevators = ref([
   {
     id: 0, 
     isMoving: false, 
@@ -68,7 +68,8 @@ let elevators = ref([
     ] 
   }
 ]);
-let elevatorLogs: any[] = []; 
+const elevatorLogs: any[] = ref([]);
+let activeElevatorLogs = ref(0);
 
 setInterval(() => {
   let randomStart = Math.floor(Math.random() * 10);
@@ -84,8 +85,7 @@ setInterval(() => {
 }, interval);
 
 const elevator = (elevator: number, start: number, end: number) => {
-  manageLogs();
-  elevatorLogs.push({ class: `elevator-${elevator+1}`, message: `A passenger is waiting in ${start+1}F` });
+  log('waiting', elevator, start);
 
   elevators.value[elevator].isMoving = true;
   const currentFloor = elevators.value[elevator].floors.findIndex(f => f.isStandBy);
@@ -137,8 +137,7 @@ const up = (elevator: number, start: number, end: number, isOccupied: boolean) =
       
       if (currentFloor === end) {
         if (isOccupied) {
-          manageLogs();
-          elevatorLogs.push({ class: `elevator-${elevator+1}`, message: `Passenger reached his/her destination` });
+          log('arrived', elevator, currentFloor);
         }
         clearInterval(i);
         resolve(currentFloor);
@@ -165,8 +164,7 @@ const down = (elevator: number, start: number, end: number, isOccupied: boolean)
       
       if (currentFloor === end) {
         if (isOccupied) {
-          manageLogs();
-          elevatorLogs.push({ class: `elevator-${elevator+1}`, message: `Passenger reached his/her destination` });
+          log('arrived', elevator, currentFloor);
         }
         clearInterval(i);
         resolve(currentFloor);
@@ -185,8 +183,7 @@ const setupUnoccupiedFloor = (elevator: number, currentFloor: number) => {
     elevators.value[elevator].floors[currentFloor].isOccupied = false;
     elevators.value[elevator].floors[currentFloor].isUnoccupied = true;
     elevators.value[elevator].isMoving = false;
-    manageLogs();
-    elevatorLogs.push({ class: `elevator-${elevator+1}`, message: `A passenger left the Elevator ${elevator+1} in ${currentFloor+1}F` });
+    log('left', elevator, currentFloor);
   }, interval);
 }
 
@@ -197,20 +194,54 @@ const setupOccupiedFloor = (elevator: number, currentFloor: number, isOccupied: 
     elevators.value[elevator].floors[currentFloor].isWaiting = false;
     elevators.value[elevator].floors[currentFloor].isOccupied = true;
     if (loopIndex == 0) {
-      manageLogs();
-      elevatorLogs.push({ class: `elevator-${elevator+1}`, message: `Elevator ${elevator+1} picked a passenger in ${currentFloor+1}F` });
+      log('picked', elevator, currentFloor);
     }
   }
   if(!isOccupied && loopIndex == 0) {
-    manageLogs();
-    elevatorLogs.push({ class: `elevator-${elevator+1}`, message: `Elevator ${elevator+1} is picking a passenger in ${end+1}F` });
+    log('picking', elevator, end);
   }
 }
 
 const manageLogs = () => {
-  if (elevatorLogs.length == 20) {
-    elevatorLogs.shift();
+  if (elevatorLogs.value.length == 20) {
+    elevatorLogs.value.shift();
   }
+}
+
+const log = (event: string, elevator: number, floor: number) => {
+  manageLogs();
+
+  let id = elevator+1;
+  let isVisible = (id == activeElevatorLogs.value || activeElevatorLogs.value == 0) ? true : false;
+  let message = "";
+  if (event == 'waiting') {
+    message = `A passenger is waiting in ${floor+1}F`;
+  }
+  if (event == 'picking') {
+    message = `Elevator ${id} is picking a passenger in ${floor+1}F`;
+  }
+  if (event == 'picked') {
+    message = `Elevator ${id} picked a passenger in ${floor+1}F`
+  }
+  if (event == 'arrived') {
+    message = "Passenger reached his/her destination";
+  }
+  if (event == 'left') {
+    message = `A passenger left the Elevator ${id} in ${floor+1}F`
+  }
+  
+  elevatorLogs.value.push({ id, class: `elevator-${id}`, message, isVisible });
+}
+
+const toggleElevatorLogs = (id: number) => {
+  activeElevatorLogs.value = id;
+  elevatorLogs.value.forEach(eLog => {
+    if (eLog.id === id || id === 0) {
+      eLog.isVisible = true;
+    } else {
+      eLog.isVisible = false;
+    }
+  });
 }
 </script>
 
@@ -222,8 +253,15 @@ const manageLogs = () => {
         </div>
     </div>
     <div class="elevator-logs">
+      <div class="elevator-logs-action">
+        <button class="elevator-logs-action-item" @click="toggleElevatorLogs(0)"></button>
+        <button class="elevator-logs-action-item" @click="toggleElevatorLogs(1)"></button>
+        <button class="elevator-logs-action-item" @click="toggleElevatorLogs(2)"></button>
+        <button class="elevator-logs-action-item" @click="toggleElevatorLogs(3)"></button>
+        <button class="elevator-logs-action-item" @click="toggleElevatorLogs(4)"></button>
+      </div>
       <ul class="elevator-logs-list">
-        <li class="elevator-logs-list-item" v-for="eLog in elevatorLogs" :class="eLog.class">{{ eLog.message }}</li>
+        <li class="elevator-logs-list-item" v-for="eLog in elevatorLogs" :class="[ eLog.isVisible ? 'show' : 'hide' ]"><span :class="eLog.class">{{ eLog.message }}</span></li>
       </ul>
     </div>
   </div>
@@ -329,6 +367,40 @@ const manageLogs = () => {
     text-align: center;
     padding: 0 10px;
   }
+  .elevator-logs-action {
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    .elevator-logs-action-item {
+      width: 100%;
+      height: 20px;
+      border: none;
+      cursor: pointer;
+      &:hover {
+        position: relative;
+        top: -2px;
+      }
+      &:active {
+        top: unset;
+      }
+      &:nth-child(1) {
+        background-color: #d3d3d3;
+      }
+      &:nth-child(2) {
+        background-color: #ffa4e4;
+      }
+      &:nth-child(3) {
+        background-color: #a4b2ff;
+      }
+      &:nth-child(4) {
+        background-color: #a4deff;
+      }
+      &:nth-child(5) {
+        background-color: #a4ffeb;
+      }
+    }
+  }
   .elevator-logs-list {
     height: 100%;
     overflow: auto;
@@ -339,22 +411,25 @@ const manageLogs = () => {
     padding: 0;
   }
   .elevator-logs-list-item {
-    padding: 3px 5px;
-    border-radius: 5px;
-    &.elevator-default {
-      background-color: #e4e4e4;
+    &.hide {
+      display: none;
     }
-    &.elevator-1 {
-      background-color: #ffa4e4;
-    }
-    &.elevator-2 {
-      background-color: #a4b2ff;
-    }
-    &.elevator-3 {
-      background-color: #a4deff;
-    }
-    &.elevator-4 {
-      background-color: #a4ffeb;
+    span {
+      padding: 3px 5px;
+      border-radius: 5px;
+      display: block;
+      &.elevator-1 {
+        background-color: #ffa4e4;
+      }
+      &.elevator-2 {
+        background-color: #a4b2ff;
+      }
+      &.elevator-3 {
+        background-color: #a4deff;
+      }
+      &.elevator-4 {
+        background-color: #a4ffeb;
+      }
     }
   }
 }
