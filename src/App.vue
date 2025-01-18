@@ -202,9 +202,9 @@ const setupOccupiedFloor = (elevator: number, currentFloor: number, isOccupied: 
   }
 }
 
-const manageLogs = (id: number, event: string) => {
+const manageLogs = (id: number) => {
   const elevatorLogsById = elevatorLogs.value.filter(e => e.id === id);
-  const index = elevatorLogs.value.findIndex(e => e.id === id && e.event === event);
+  const index = elevatorLogs.value.findIndex(e => e.id === id && e.event === elevatorLogsById[0].event);
   if (elevatorLogsById.length == 5) {
     elevatorLogs.value.splice(index, 1);
   }
@@ -230,7 +230,7 @@ const log = (event: string, elevator: number, floor: number) => {
     message = `A passenger left the Elevator ${id} in ${floor+1}F`
   }
   
-  manageLogs(id, event);
+  manageLogs(id);
   elevatorLogs.value.push({ id, event, class: `elevator-${id}`, message, isVisible });
 }
 
